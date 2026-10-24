@@ -1,77 +1,302 @@
-# KamaiClear MVP
+# KamaiClear
 
-**Tagline:** Know what your shift really pays.
+> **Know what your shift really pays.**
 
-KamaiClear is a phone-first web MVP for delivery riders and other gig workers. It separates gross payout from fuel, maintenance, phone/data and other operating costs, then creates a transparent **Net Pay Receipt**.
+KamaiClear is a phone-first earnings workspace for delivery riders and other gig workers. It turns a platform payout into a clearer take-home view by separating gross earnings, operating costs, net earnings and true hourly pay.
 
-## What is implemented
+<p>
+  <strong>Current stage:</strong> local-first MVP ·
+  <strong>Primary flow:</strong> record → calculate → review → save → share
+</p>
 
-- Overview dashboard with true hourly pay, weekly net, cost rate and best shift.
-- Shift logger with live calculation while typing.
-- Local shift history with platform filtering.
-- Net Pay Receipt with print / save as PDF support.
-- Responsive desktop sidebar and mobile bottom navigation.
-- Local-only persistence through `localStorage` in the current demo; no platform credentials or real user data are required.
-- Typed domain calculations in `src/lib/earnings.ts` and a component-based Next.js App Router interface.
-- Accessible labels, live calculation feedback, responsive navigation, empty states and print-friendly receipt output.
-- A voice-first **KamaiClear Saathi** assistant with text input, browser speech-to-text, text-to-speech and speech-to-speech mode.
-- A focused three-color visual system: ocean navy, working teal and saffron action color.
-- A server action route at `/api/assistant` that accepts structured commands, navigates views, fills shift fields and only saves after an explicit save request.
-- Libraries.dev motion polish using `voice-glow` for the live microphone beam and `thinking-orbs` while an assistant request is being interpreted.
+<details>
+<summary><strong>Contents</strong></summary>
 
-## Run the Next.js MVP
+- [What KamaiClear does](#what-kamaiclear-does)
+- [60-second product tour](#60-second-product-tour)
+- [Quick start](#quick-start)
+- [Assistant playground](#assistant-playground)
+- [How the calculation works](#how-the-calculation-works)
+- [Architecture](#architecture)
+- [Configuration](#configuration)
+- [Quality checks](#quality-checks)
+- [Deployment](#deployment)
+- [Privacy and safety](#privacy-and-safety)
+- [Project structure](#project-structure)
+- [Roadmap](#roadmap)
+- [Documentation](#documentation)
 
-The source of truth is now the Next.js app under `src/`.
+</details>
+
+## What KamaiClear does
+
+| Workspace | Purpose |
+| --- | --- |
+| **Overview** | See net earnings, true hourly pay, cost rate and best recorded shift. |
+| **Log a shift** | Capture payout, tips, incentives, hours, distance and operating costs with live calculations. |
+| **Shift history** | Filter and compare saved shifts in the current browser. |
+| **Net Pay Receipt** | Create a clear, printable record of what a shift actually paid. |
+| **KamaiClear Assistant** | Type or speak simple requests to navigate, fill shift fields and review earnings. |
+
+The product is intentionally honest about its current boundary: it works locally with browser storage. Hosted accounts, shared records and authentication are planned, but are not pretending to be connected in this MVP.
+
+## 60-second product tour
+
+1. Start the app and open **Log a shift**.
+2. Enter an example shift:
+   - Platform: `Zomato`
+   - Hours: `8.5`
+   - Payout: `1150`
+   - Fuel: `240`
+   - Maintenance: `60`
+3. Review the live net-pay calculation.
+4. Save the shift only after checking the values.
+5. Open **Shift history** and create the **Net Pay Receipt**.
+6. Print or save the receipt as a PDF when a portable record is useful.
+
+> **Tip:** The workspace starts empty. The demo does not seed fake shifts or use platform credentials.
+
+## Quick start
+
+### Requirements
+
+- Node.js 20.9 or newer
+- npm 10 or newer
+- A modern browser for the best responsive and voice experience
+
+### Install and run
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open [http://localhost:3000](http://localhost:3000).
 
-Use these checks before sharing the prototype:
+### Run the production build locally
+
+```bash
+npm run build
+npm run start
+```
+
+The production server uses port `3000` by default. Use `--port 3100` if another local process is already using it:
+
+```bash
+npm run start -- --hostname 127.0.0.1 --port 3100
+```
+
+## Assistant playground
+
+The assistant accepts plain-language requests instead of requiring users to know the product vocabulary.
+
+<details>
+<summary><strong>Try these text commands</strong></summary>
+
+```text
+hi
+What did I earn?
+Log a shift
+Show my history
+Open my receipt
+I worked 8.5 hours on Zomato, earned 1150, fuel 240 and maintenance 60
+Save shift
+```
+
+</details>
+
+<details>
+<summary><strong>Supported interaction modes</strong></summary>
+
+- Text-to-text assistant replies
+- Browser speech-to-text when supported by the device/browser
+- Text-to-speech for assistant replies
+- Hands-free speech mode
+- Multilingual assistant labels and response templates
+- Local deterministic fallback when no model key is available
+
+</details>
+
+The request path is deliberately small and validated:
+
+```mermaid
+flowchart LR
+    A[Voice or text input] --> B[POST /api/assistant]
+    B --> C{AI_API_KEY available?}
+    C -->|Yes| D[OpenAI-compatible model]
+    C -->|No| E[Local action parser]
+    D --> F[Validate action contract]
+    E --> F
+    F --> G[Navigate, fill fields, or explicit save]
+```
+
+The browser never receives the server-side model key. Ambiguous speech should be reviewed before saving; no honest speech system can guarantee perfect recognition for every device, accent or language.
+
+## How the calculation works
+
+KamaiClear keeps the calculation model explicit and readable in [`src/lib/earnings.ts`](src/lib/earnings.ts):
+
+```text
+Gross earnings = payout + tips + incentives
+Operating costs = fuel + maintenance + phone/data + other costs
+Net earnings = gross earnings - operating costs
+True hourly pay = net earnings / recorded hours
+```
+
+All displayed money is formatted as Indian Rupees (`INR`). The current MVP treats values as user-provided records; it does not verify platform statements.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    UI[Next.js App Router UI]
+    UI --> CALC[Pure earnings calculations]
+    UI --> STORE[Browser localStorage]
+    UI --> ASSIST[POST /api/assistant]
+    ASSIST --> LIVE[Optional OpenAI-compatible model]
+    ASSIST --> FALLBACK[Local action fallback]
+    ASSIST --> VALIDATE[Validated action contract]
+    VALIDATE --> UI
+```
+
+### Design boundaries
+
+- `src/lib/earnings.ts` owns calculation rules and shared data types.
+- `src/lib/assistant.ts` owns deterministic intents, multilingual response templates and field extraction.
+- `src/app/api/assistant/route.ts` owns the optional live model boundary and action validation.
+- `src/components/kamaiclear-app.tsx` owns the client workflow and browser persistence.
+- `src/components/kamaiclear-logo.tsx` owns the reusable brand mark and wordmark.
+- `src/app/globals.css` owns the focused navy, teal and saffron visual system.
+
+## Configuration
+
+The app runs without credentials. To configure optional infrastructure, copy the example file:
+
+**Windows**
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+**macOS / Linux**
+
+```bash
+cp .env.example .env.local
+```
+
+### Optional server-side assistant model
+
+```env
+AI_API_KEY=replace-with-a-server-only-key
+AI_BASE_URL=https://api.openai.com/v1
+AI_MODEL=gpt-4o-mini
+```
+
+Keep `.env.local` private. It is ignored by Git and must never be copied into client-side code, documentation, screenshots or commits.
+
+### Reserved future infrastructure
+
+The example file also documents future boundaries for Supabase, Neon, auth, payments and email. They are not required for the current MVP and are intentionally not wired into the user flow yet.
+
+## Quality checks
+
+Run the checks that are currently configured before sharing a build:
 
 ```bash
 npm run typecheck
 npm run build
+npm audit --audit-level=high
 ```
 
-## Legacy static preview
+Current verification coverage:
 
-The original zero-dependency preview remains available as `index.html`. For a local HTTP preview, run any static file server from this directory, for example:
+| Check | Status |
+| --- | --- |
+| TypeScript typecheck | `npm run typecheck` |
+| Production build | `npm run build` |
+| Dependency audit | `npm audit --audit-level=high` |
+| Lint script | Not configured yet |
+| Automated test script | Not configured yet |
 
-```bash
-python -m http.server 4173
-```
-
-Then open `http://localhost:4173`.
-
-## Round 2 demo path
-
-1. Open **Log a shift**.
-2. Change payout, fuel and hours to show the live calculation.
-3. Save the shift.
-4. Open the **Net Pay Receipt**.
-5. Use **Print / save PDF** if a shareable artifact is needed.
-
-The workspace starts empty for each new browser and stores only records created by the user. Supabase/Auth, Neon, payments and email are intentionally not wired into this MVP until the product is validated with riders; the current local-first boundary prevents the demo from pretending that real user data is already connected.
-
-## Assistant limitations
-
-The assistant works locally without an API key. It answers the supported KamaiClear intents using the current shift records and browser speech APIs. Browser recognition and voice availability differ by device, browser and language. No honest product can guarantee 100% speech recognition or translation accuracy for every language, so the UI always keeps typing as a fallback and asks users to check numbers before saving.
-
-## Real-time model boundary
-
-The assistant request path is:
+Manual smoke path:
 
 ```text
-Voice or text input
-  → /api/assistant
-  → live OpenAI-compatible model when AI_API_KEY exists
-  → local action model fallback when it does not
-  → validated action
-  → navigation / form fill / explicit save
+Open app → Log a shift → watch live calculation → Save → History → Receipt → refresh browser
 ```
 
-Set `AI_API_KEY`, `AI_BASE_URL` and `AI_MODEL` in a server-only environment to enable the live model. The model must return a validated JSON action; the browser never receives the API key. Without credentials, the same user flow works through the local action parser.
+## Deployment
+
+The app is structured for Vercel deployment as a Next.js application.
+
+```bash
+npx vercel login
+npx vercel --prod
+```
+
+Set `AI_API_KEY`, `AI_BASE_URL` and `AI_MODEL` as server-side environment variables in the deployment platform only if live model responses are needed. The deterministic local fallback keeps the core assistant flow usable without those values.
+
+Before a public hosted persistence release, add authentication, a server-backed shift store and row-level access controls. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the planned boundary.
+
+## Privacy and safety
+
+- Shift records remain in the current browser through `localStorage`.
+- No real OTP, Aadhaar number, platform password or payment credential is required by this MVP.
+- Do not paste API keys into the assistant or commit them to the repository.
+- Treat payout, cost and receipt values as user-entered records, not verified statements.
+- Review assistant-filled numbers before saving.
+- Voice quality depends on browser, device, microphone, network and language support; typing remains the reliable fallback.
+
+## Project structure
+
+```text
+.
+├── src/
+│   ├── app/
+│   │   ├── api/assistant/route.ts   # Optional live model boundary
+│   │   ├── globals.css              # Brand tokens and responsive UI
+│   │   ├── icon.svg                 # Browser/app icon
+│   │   ├── layout.tsx               # Metadata and root layout
+│   │   └── page.tsx                 # App entry point
+│   ├── components/
+│   │   ├── kamaiclear-app.tsx       # Main product workflow
+│   │   ├── kamaiclear-assistant.tsx # Voice/text assistant UI
+│   │   └── kamaiclear-logo.tsx      # Reusable logo component
+│   └── lib/
+│       ├── assistant.ts              # Intents, extraction and responses
+│       ├── cn.ts                     # Class-name helper
+│       └── earnings.ts               # Domain model and calculations
+├── public/kamaiclear-logo.svg       # Standalone logo asset
+├── index.html                       # Legacy zero-dependency preview
+├── ARCHITECTURE.md                  # Hosted architecture plan
+├── MVP-DESCRIPTION.txt              # MVP submission summary
+└── ROUND-2-SUBMISSION.md            # Round 2 documentation
+```
+
+## Roadmap
+
+### Current MVP
+
+- Local-first shift logging
+- Transparent net-pay calculation
+- Printable Net Pay Receipt
+- Voice/text assistant with safe explicit-save behavior
+- Responsive phone-first interface
+
+### Next product slice
+
+1. Validate the workflow with at least five riders.
+2. Add Supabase Auth and a hosted `shifts` table.
+3. Add row-level security and a storage adapter behind the existing `Shift` type.
+4. Add automated tests and browser-level regression checks.
+5. Add reporting only after real usage justifies it.
+
+## Documentation
+
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — current boundary, planned hosted stack and security rules
+- [`MVP-DESCRIPTION.txt`](MVP-DESCRIPTION.txt) — concise product and submission description
+- [`ROUND-2-SUBMISSION.md`](ROUND-2-SUBMISSION.md) — detailed MVP submission document
+- [`public/kamaiclear-logo.svg`](public/kamaiclear-logo.svg) — full brand logo asset
+
+---
+
+Built for clearer decisions, not just bigger payout numbers.
