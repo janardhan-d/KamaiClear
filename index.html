@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d1717" />
+    <title>KamaiClear — Know what your shift really pays</title>
+    <style>
+      :root {
+        --ink: #10201f;
+        --muted: #6f7c79;
+        --line: #dfe6e1;
+        --paper: #f4f7f3;
+        --panel: #ffffff;
+        --teal: #167c6c;
+        --teal-dark: #0f5d52;
+        --mint: #dff3e6;
+        --amber: #e29a43;
+        --amber-soft: #fff1d9;
+        --red: #bb5d4e;
+        --red-soft: #f9e7e2;
+        --shadow: 0 18px 50px rgba(18, 44, 39, 0.08);
+        --radius-lg: 24px;
+        --radius-md: 16px;
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.45;
+      }
+      button, input, select { font: inherit; }
+      button { cursor: pointer; }
+      button:focus-visible, input:focus-visible, select:focus-visible {
+        outline: 3px solid rgba(22, 124, 108, .3);
+        outline-offset: 2px;
+      }
+
+      .app-shell { min-height: 100vh; display: grid; grid-template-columns: 252px minmax(0, 1fr); }
+      .sidebar {
+        position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column;
+        padding: 28px 20px 18px; background: var(--ink); color: #eaf4ed;
+      }
+      .brand { display: flex; align-items: center; gap: 12px; padding: 0 10px 34px; }
+      .brand-mark {
+        width: 40px; height: 40px; display: grid; place-items: center; border-radius: 13px;
+        background: var(--mint); color: var(--teal-dark); font-size: 20px; font-weight: 900;
+      }
+      .brand-mark svg { width: 100%; height: 100%; padding: 7px; }
+      .brand strong { display: block; font-size: 17px; letter-spacing: -.03em; }
+      .brand span { color: #93aca4; font-size: 10px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+      .nav-label { padding: 0 12px; color: #718b83; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+      .nav { display: grid; gap: 7px; margin-top: 10px; }
+      .nav button {
+        border: 0; border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 11px;
+        background: transparent; color: #a8bbb4; text-align: left; font-size: 13px; font-weight: 750;
+      }
+      .nav button:hover { background: rgba(255,255,255,.06); color: #fff; }
+      .nav button.active { background: var(--teal); color: #fff; box-shadow: 0 10px 24px rgba(0, 0, 0, .18); }
+      .nav-icon { width: 22px; text-align: center; opacity: .9; }
+      .sidebar-footer { margin-top: auto; display: grid; gap: 14px; }
+      .privacy-note { padding: 13px; border: 1px solid rgba(195, 235, 208, .14); border-radius: 14px; background: rgba(255,255,255,.04); }
+      .privacy-note strong { display: block; color: #d8efe0; font-size: 11px; }
+      .privacy-note p { margin: 5px 0 0; color: #8fa9a0; font-size: 10px; line-height: 1.5; }
+      .user-chip { display: flex; align-items: center; gap: 10px; padding: 11px 10px; border-top: 1px solid rgba(255,255,255,.1); }
+      .avatar { width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; background: #d9b97b; color: #48351d; font-weight: 900; font-size: 12px; }
+      .user-chip strong { display: block; font-size: 11px; }
+      .user-chip span { display: block; color: #90aaa0; font-size: 10px; }
+
+      .main { min-width: 0; padding: 27px 34px 48px; }
+      .topbar { max-width: 1240px; margin: 0 auto 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+      .eyebrow { margin: 0 0 5px; color: var(--teal); font-size: 11px; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { margin-bottom: 7px; font-size: clamp(26px, 3vw, 38px); line-height: 1.06; letter-spacing: -.055em; }
+      h2 { margin-bottom: 5px; font-size: 22px; letter-spacing: -.035em; }
+      h3 { margin-bottom: 5px; font-size: 15px; letter-spacing: -.02em; }
+      .subtle { color: var(--muted); font-size: 13px; }
+      .top-actions { display: flex; align-items: center; gap: 10px; }
+      .date-pill, .status-pill { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 999px; background: #fff; padding: 9px 12px; color: var(--muted); font-size: 11px; font-weight: 800; white-space: nowrap; }
+      .status-pill { color: var(--teal-dark); border-color: #bce2ca; background: var(--mint); }
+      .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #3caf75; }
+      .primary-btn, .secondary-btn, .quiet-btn {
+        border: 0; border-radius: 11px; padding: 11px 14px; font-size: 12px; font-weight: 850; transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+      }
+      .primary-btn { background: var(--teal); color: #fff; box-shadow: 0 9px 20px rgba(22,124,108,.18); }
+      .primary-btn:hover { background: var(--teal-dark); transform: translateY(-1px); }
+      .secondary-btn { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+      .secondary-btn:hover, .quiet-btn:hover { background: #eef4ef; }
+      .quiet-btn { background: transparent; color: var(--teal-dark); padding-inline: 7px; }
+
+      .view { display: none; max-width: 1240px; margin: 0 auto; animation: enter .24s ease both; }
+      .view.active { display: block; }
+      @keyframes enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+      .hero-strip { display: grid; grid-template-columns: 1.25fr .75fr; gap: 18px; margin-bottom: 18px; }
+      .hero-card { position: relative; overflow: hidden; min-height: 228px; padding: 28px; border-radius: var(--radius-lg); background: var(--ink); color: #fff; box-shadow: var(--shadow); }
+      .hero-card::after { content: ""; position: absolute; right: -70px; bottom: -90px; width: 250px; height: 250px; border-radius: 50%; border: 28px solid rgba(197,238,204,.09); box-shadow: 0 0 0 28px rgba(197,238,204,.05), 0 0 0 56px rgba(197,238,204,.03); }
+      .hero-card .eyebrow { color: #a5dfb8; }
+      .hero-card h1 { max-width: 510px; }
+      .hero-card p { max-width: 500px; margin-bottom: 24px; color: #a7bbb3; font-size: 14px; }
+      .hero-card .primary-btn { background: var(--mint); color: var(--teal-dark); }
+      .hero-card .primary-btn:hover { background: #c8e8d2; }
+      .hero-metric { padding: 26px; border: 1px solid #d9e9dd; border-radius: var(--radius-lg); background: #eaf6ec; }
+      .hero-metric .metric-label { color: #55766a; }
+      .hero-metric .big-number { margin: 25px 0 8px; color: var(--teal-dark); font-size: 48px; font-weight: 900; letter-spacing: -.075em; line-height: .9; }
+      .metric-label { display: block; font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+      .hero-metric .trend { color: #3f8c62; font-size: 12px; font-weight: 800; }
+
+      .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; margin-bottom: 18px; }
+      .stat-card { padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); box-shadow: 0 8px 24px rgba(18, 44, 39, .03); }
+      .stat-card .value { margin: 10px 0 4px; font-size: 25px; font-weight: 900; letter-spacing: -.055em; }
+      .stat-card .hint { color: var(--muted); font-size: 11px; }
+      .stat-card.green .value { color: var(--teal); }
+      .stat-card.amber .value { color: var(--amber); }
+      .stat-card.red .value { color: var(--red); }
+      .dash-grid { display: grid; grid-template-columns: 1.12fr .88fr; gap: 18px; }
+      .panel { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); box-shadow: 0 8px 26px rgba(18, 44, 39, .035); }
+      .panel-pad { padding: 22px; }
+      .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 20px; }
+      .panel-head .subtle { max-width: 470px; }
+      .chart-wrap { position: relative; height: 184px; border-bottom: 1px solid #e7ede8; background: repeating-linear-gradient(to bottom, transparent 0, transparent 44px, #edf2ee 45px); }
+      .chart-svg { width: 100%; height: 100%; overflow: visible; }
+      .chart-svg polyline { fill: none; stroke: var(--teal); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .chart-svg circle { fill: #fff; stroke: var(--teal); stroke-width: 3; }
+      .chart-labels { display: flex; justify-content: space-between; padding: 8px 0 0; color: #93a09b; font-size: 10px; font-weight: 800; }
+      .shift-list { display: grid; gap: 10px; }
+      .shift-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid #eef2ef; }
+      .shift-row:last-child { border-bottom: 0; }
+      .shift-title { display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 850; }
+      .shift-date { color: var(--muted); font-size: 11px; }
+      .shift-amount { text-align: right; }
+      .shift-amount strong { display: block; color: var(--teal-dark); font-size: 14px; }
+      .shift-amount span { color: var(--muted); font-size: 10px; }
+      .mini-avatar { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 8px; background: var(--mint); color: var(--teal-dark); font-size: 12px; }
+      .empty-state { padding: 25px 10px; color: var(--muted); text-align: center; font-size: 12px; }
+
+      .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 22px; }
+      .page-head h1 { font-size: 30px; }
+      .form-layout { display: grid; grid-template-columns: 1.1fr .9fr; gap: 18px; align-items: start; }
+      .form-panel { padding: 25px; }
+      .form-section { padding-bottom: 22px; margin-bottom: 22px; border-bottom: 1px solid #edf1ee; }
+      .form-section:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
+      .section-kicker { margin-bottom: 14px; color: var(--teal); font-size: 10px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+      .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+      .field { display: grid; gap: 6px; }
+      .field.full { grid-column: 1 / -1; }
+      .field label { color: #4c5d58; font-size: 11px; font-weight: 850; }
+      .field input, .field select { width: 100%; border: 1px solid #d6e1da; border-radius: 10px; padding: 11px 12px; color: var(--ink); background: #fbfdfb; font-size: 13px; }
+      .field input::placeholder { color: #a4b0aa; }
+      .field input:focus, .field select:focus { border-color: #77bca5; background: #fff; }
+      .input-prefix { position: relative; }
+      .input-prefix span { position: absolute; top: 50%; left: 12px; transform: translateY(-50%); color: #7a8d85; font-size: 12px; font-weight: 850; }
+      .input-prefix input { padding-left: 28px; }
+      .form-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
+      .info-callout { display: flex; gap: 11px; padding: 13px; border-radius: 12px; background: #f0f7f1; color: #527365; font-size: 11px; }
+      .info-callout strong { display: block; color: var(--teal-dark); }
+      .calculator { position: sticky; top: 22px; padding: 23px; background: var(--ink); color: #eaf4ed; }
+      .calculator .eyebrow { color: #a5dfb8; }
+      .calculator h2 { color: #fff; }
+      .calculator p { color: #91a9a0; font-size: 12px; }
+      .calc-line { display: flex; justify-content: space-between; gap: 20px; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,.1); color: #b8c9c1; font-size: 12px; }
+      .calc-line strong { color: #fff; }
+      .calc-line.negative strong { color: #f2b39b; }
+      .calc-total { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; padding: 21px 0 3px; }
+      .calc-total span { color: #a6bbb2; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+      .calc-total strong { color: #b7e8c4; font-size: 32px; letter-spacing: -.06em; }
+      .calc-hour { display: flex; justify-content: space-between; margin-top: 14px; padding: 12px; border-radius: 11px; background: rgba(255,255,255,.07); color: #c7d8d0; font-size: 11px; }
+      .calc-hour strong { color: #fff; }
+
+      .history-layout { display: grid; gap: 18px; }
+      .filter-row { display: flex; flex-wrap: wrap; gap: 9px; }
+      .filter-row select { min-width: 145px; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; background: #fff; color: var(--ink); font-size: 11px; font-weight: 750; }
+      .table-wrap { overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; min-width: 690px; }
+      th { padding: 12px 14px; color: #7a8983; background: #f7faf7; font-size: 10px; font-weight: 900; letter-spacing: .07em; text-align: left; text-transform: uppercase; }
+      td { padding: 15px 14px; border-top: 1px solid #edf1ee; color: #43514d; font-size: 12px; }
+      td strong { color: var(--ink); }
+      .positive { color: var(--teal); font-weight: 900; }
+      .negative { color: var(--red); font-weight: 900; }
+      .badge { display: inline-flex; padding: 5px 8px; border-radius: 999px; font-size: 10px; font-weight: 850; }
+      .badge.good { background: var(--mint); color: var(--teal-dark); }
+      .badge.warn { background: var(--amber-soft); color: #9c651e; }
+      .badge.low { background: var(--red-soft); color: #a4493a; }
+
+      .receipt-layout { display: grid; grid-template-columns: .9fr 1.1fr; gap: 18px; align-items: start; }
+      .receipt-preview { padding: 28px; border: 1px solid #cddbd1; background: #fff; box-shadow: var(--shadow); }
+      .receipt-top { display: flex; justify-content: space-between; gap: 15px; padding-bottom: 22px; border-bottom: 1px dashed #c7d6cb; }
+      .receipt-brand { color: var(--teal-dark); font-size: 18px; font-weight: 950; letter-spacing: -.05em; }
+      .receipt-top small { color: #86978e; font-size: 10px; text-align: right; }
+      .receipt-date { margin: 23px 0 6px; color: #7a8983; font-size: 10px; font-weight: 850; text-transform: uppercase; }
+      .receipt-preview h2 { margin-bottom: 18px; }
+      .receipt-big { padding: 18px 0; margin-bottom: 17px; border-top: 1px solid #edf1ee; border-bottom: 1px solid #edf1ee; }
+      .receipt-big span { color: #71847b; font-size: 11px; font-weight: 800; }
+      .receipt-big strong { display: block; margin-top: 4px; color: var(--teal-dark); font-size: 42px; letter-spacing: -.08em; }
+      .receipt-lines { display: grid; gap: 11px; }
+      .receipt-line { display: flex; justify-content: space-between; color: #61736b; font-size: 12px; }
+      .receipt-line strong { color: var(--ink); }
+      .receipt-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 27px; padding-top: 14px; border-top: 1px dashed #c7d6cb; color: #92a097; font-size: 10px; }
+      .insight-stack { display: grid; gap: 13px; }
+      .insight-card { padding: 19px; border: 1px solid var(--line); border-radius: var(--radius-md); background: #fff; }
+      .insight-card .icon-box { width: 32px; height: 32px; display: grid; place-items: center; margin-bottom: 12px; border-radius: 10px; background: var(--amber-soft); color: #a66a1e; font-weight: 900; }
+      .insight-card p { margin-bottom: 0; color: var(--muted); font-size: 12px; }
+      .bar-list { display: grid; gap: 12px; margin-top: 16px; }
+      .bar-label { display: flex; justify-content: space-between; margin-bottom: 5px; color: #61736b; font-size: 10px; font-weight: 800; }
+      .bar-track { height: 7px; overflow: hidden; border-radius: 999px; background: #edf1ee; }
+      .bar-track span { display: block; height: 100%; border-radius: inherit; background: var(--teal); }
+
+      .mobile-nav { display: none; }
+      .toast { position: fixed; right: 25px; bottom: 25px; z-index: 20; max-width: 320px; padding: 13px 15px; border: 1px solid #bde3c8; border-radius: 13px; background: #effaf1; color: var(--teal-dark); box-shadow: var(--shadow); font-size: 12px; font-weight: 800; animation: toast-in .24s ease both; }
+      @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      @media print {
+        body { background: #fff; }
+        .sidebar, .topbar, .mobile-nav, .page-head, .receipt-actions, .insight-stack, .toast { display: none !important; }
+        .app-shell { display: block; }
+        .main { padding: 0; }
+        .view { display: none !important; }
+        #receiptView { display: block !important; }
+        .receipt-layout { display: block; }
+        .receipt-preview { box-shadow: none; }
+      }
+      @media (max-width: 980px) {
+        .app-shell { display: block; }
+        .sidebar { display: none; }
+        .main { padding: 22px 18px 88px; }
+        .mobile-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px; border-top: 1px solid #cfdcd2; background: rgba(255,255,255,.95); backdrop-filter: blur(12px); }
+        .mobile-nav button { border: 0; border-radius: 10px; padding: 8px 3px; background: transparent; color: #789087; font-size: 9px; font-weight: 850; }
+        .mobile-nav button.active { background: var(--mint); color: var(--teal-dark); }
+        .mobile-nav .nav-icon { display: block; width: auto; margin-bottom: 2px; font-size: 15px; }
+        .hero-strip, .dash-grid, .form-layout, .receipt-layout { grid-template-columns: 1fr; }
+        .calculator { position: static; }
+        .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      }
+      @media (max-width: 600px) {
+        .topbar { align-items: flex-start; }
+        .top-actions { align-items: flex-end; flex-direction: column; }
+        .date-pill { display: none; }
+        .hero-card, .hero-metric, .panel-pad, .form-panel, .calculator, .receipt-preview { padding: 20px; }
+        .hero-card { min-height: 250px; }
+        .hero-metric .big-number { margin-top: 25px; }
+        .stat-grid { gap: 9px; }
+        .stat-card { padding: 14px; }
+        .stat-card .value { font-size: 21px; }
+        .field-grid { grid-template-columns: 1fr; }
+        .field.full { grid-column: auto; }
+        .form-actions { flex-direction: column-reverse; }
+        .form-actions button { width: 100%; }
+        .page-head { flex-direction: column; }
+        .page-head .primary-btn { width: 100%; }
+        .receipt-top { flex-direction: column; }
+        .receipt-top small { text-align: left; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div>
+          <div class="brand">
+            <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" focusable="false"><path d="M43 16.5a22 22 0 1 0 0 31" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="7"></path><path d="m24 40 19-19m0 0H31m12 0v12" fill="none" stroke="#F2B134" stroke-linecap="round" stroke-linejoin="round" stroke-width="6"></path></svg></div>
+            <div><strong>KamaiClear</strong><span>Net pay proof</span></div>
+          </div>
+          <div class="nav-label">Workspace</div>
+          <nav class="nav">
+            <button class="active" data-view="dashboard"><span class="nav-icon">◉</span>Overview</button>
+            <button data-view="log"><span class="nav-icon">＋</span>Log a shift</button>
+            <button data-view="history"><span class="nav-icon">≡</span>Shift history</button>
+            <button data-view="receipt"><span class="nav-icon">▤</span>Net Pay Receipt</button>
+          </nav>
+        </div>
+        <div class="sidebar-footer">
+          <div class="privacy-note"><strong>Private by default</strong><p>Your numbers stay on this device in this prototype. No platform login required.</p></div>
+          <div class="user-chip"><div class="avatar">KC</div><div><strong>Personal account</strong><span>Worker workspace</span></div></div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div><p class="eyebrow">Worker-owned earnings log</p><div class="subtle">A clearer view of what your shift really paid.</div></div>
+          <div class="top-actions"><span class="date-pill">Saturday · 24 Oct 2026</span><span class="status-pill"><span class="status-dot"></span>Workspace ready</span></div>
+        </header>
+
+        <section class="view active" id="dashboardView" aria-labelledby="dashboardTitle">
+          <div class="hero-strip">
+            <div class="hero-card">
+              <p class="eyebrow">This week at a glance</p>
+              <h1 id="dashboardTitle">See the money that actually stays with you.</h1>
+              <p>Record a shift in under a minute. Fuel, maintenance and waiting time are separated so your take-home number is never a guess.</p>
+              <button class="primary-btn" data-view="log">＋ Record today's shift</button>
+            </div>
+            <div class="hero-metric">
+              <span class="metric-label">True hourly pay</span>
+              <div class="big-number" id="heroHourly">₹97.65</div>
+              <div class="trend" id="heroTrend">↑ 8.4% from last week</div>
+              <p class="subtle" style="margin: 14px 0 0; font-size: 11px;">Net income after operating costs</p>
+            </div>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-card green"><span class="metric-label">Net this week</span><div class="value" id="statNet">₹3,420</div><div class="hint" id="statNetHint">after ₹680 in costs</div></div>
+            <div class="stat-card"><span class="metric-label">Hours logged</span><div class="value" id="statHours">35.0 h</div><div class="hint" id="statHoursHint">across 5 shifts</div></div>
+            <div class="stat-card amber"><span class="metric-label">Average cost rate</span><div class="value" id="statCost">16.6%</div><div class="hint">fuel + maintenance + data</div></div>
+            <div class="stat-card red"><span class="metric-label">Best shift</span><div class="value" id="statBest">₹116/h</div><div class="hint" id="statBestHint">Saturday evening</div></div>
+          </div>
+
+          <div class="dash-grid">
+            <section class="panel panel-pad" aria-labelledby="trendTitle">
+              <div class="panel-head"><div><h2 id="trendTitle">Net hourly pay</h2><p class="subtle">Your last seven recorded shifts</p></div><span class="badge good">+8.4% trend</span></div>
+              <div class="chart-wrap"><svg class="chart-svg" viewBox="0 0 600 184" role="img" aria-label="Line chart showing recent net hourly pay"><polyline id="payLine" points="20,143 112,122 204,130 296,86 388,103 480,60 575,74"></polyline><g id="payDots"><circle cx="20" cy="143" r="5"></circle><circle cx="112" cy="122" r="5"></circle><circle cx="204" cy="130" r="5"></circle><circle cx="296" cy="86" r="5"></circle><circle cx="388" cy="103" r="5"></circle><circle cx="480" cy="60" r="5"></circle><circle cx="575" cy="74" r="5"></circle></g></svg></div>
+              <div class="chart-labels"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+            </section>
+            <section class="panel panel-pad" aria-labelledby="recentTitle">
+              <div class="panel-head"><div><h2 id="recentTitle">Recent shifts</h2><p class="subtle">A quick look at your latest entries</p></div><button class="quiet-btn" data-view="history">View all →</button></div>
+              <div class="shift-list" id="recentShifts"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="logView" aria-labelledby="logTitle">
+          <div class="page-head"><div><p class="eyebrow">Make your shift count</p><h1 id="logTitle">Record a shift</h1><p class="subtle">The more honest the inputs, the more useful the number.</p></div><span class="status-pill">No platform login needed</span></div>
+          <div class="form-layout">
+            <form class="panel form-panel" id="shiftForm">
+              <div class="form-section"><div class="section-kicker">01 · Shift details</div><div class="field-grid">
+                <div class="field"><label for="shiftDate">Date</label><input id="shiftDate" name="date" type="date" value="2026-10-24" required /></div>
+                <div class="field"><label for="platform">Platform</label><select id="platform" name="platform"><option>Zomato</option><option>Swiggy</option><option>Zepto</option><option>Uber / Rapido</option><option>Other</option></select></div>
+                <div class="field"><label for="hours">Hours online</label><input id="hours" name="hours" type="number" min="0.1" step="0.1" value="8.5" required /></div>
+                <div class="field"><label for="orders">Orders / trips</label><input id="orders" name="orders" type="number" min="0" step="1" value="22" required /></div>
+                <div class="field"><label for="kilometres">Kilometres travelled</label><input id="kilometres" name="kilometres" type="number" min="0" step="1" value="90" required /></div>
+              </div></div>
+              <div class="form-section"><div class="section-kicker">02 · Money in</div><div class="field-grid">
+                <div class="field"><label for="payout">Platform payout</label><div class="input-prefix"><span>₹</span><input id="payout" name="payout" type="number" min="0" step="1" value="1150" required /></div></div>
+                <div class="field"><label for="tips">Tips & incentives</label><div class="input-prefix"><span>₹</span><input id="tips" name="tips" type="number" min="0" step="1" value="0" /></div></div>
+              </div></div>
+              <div class="form-section"><div class="section-kicker">03 · Money out</div><div class="field-grid">
+                <div class="field"><label for="fuel">Fuel / charging</label><div class="input-prefix"><span>₹</span><input id="fuel" name="fuel" type="number" min="0" step="1" value="240" required /></div></div>
+                <div class="field"><label for="maintenance">Maintenance reserve</label><div class="input-prefix"><span>₹</span><input id="maintenance" name="maintenance" type="number" min="0" step="1" value="60" required /></div></div>
+                <div class="field"><label for="phone">Phone & data</label><div class="input-prefix"><span>₹</span><input id="phone" name="phone" type="number" min="0" step="1" value="20" required /></div></div>
+                <div class="field"><label for="otherCost">Other shift costs</label><div class="input-prefix"><span>₹</span><input id="otherCost" name="otherCost" type="number" min="0" step="1" value="0" /></div></div>
+              </div></div>
+              <div class="info-callout"><span aria-hidden="true">ⓘ</span><div><strong>Maintenance is a reserve, not a bill.</strong>Use a small amount per kilometre so future repairs are reflected in today's income.</div></div>
+              <div class="form-actions"><button type="button" class="secondary-btn" data-view="dashboard">Cancel</button><button type="submit" class="primary-btn">Save shift & generate receipt</button></div>
+            </form>
+            <aside class="panel calculator" aria-labelledby="calcTitle"><p class="eyebrow">Live calculation</p><h2 id="calcTitle">What stays with you</h2><p>Updates as you type. This is the number a gross payout hides.</p><div class="calc-line"><span>Gross earnings</span><strong id="calcGross">₹1,150</strong></div><div class="calc-line negative"><span>Operating costs</span><strong id="calcCosts">− ₹320</strong></div><div class="calc-total"><span>Net earnings</span><strong id="calcNet">₹830</strong></div><div class="calc-hour"><span>True hourly pay</span><strong id="calcHourly">₹97.65 / hr</strong></div></aside>
+          </div>
+        </section>
+
+        <section class="view" id="historyView" aria-labelledby="historyTitle">
+          <div class="page-head"><div><p class="eyebrow">Evidence, not estimates</p><h1 id="historyTitle">Shift history</h1><p class="subtle">Every entry is editable in your own records. Export a receipt whenever you need it.</p></div><button class="primary-btn" data-view="log">＋ Add shift</button></div>
+          <section class="panel panel-pad history-layout"><div class="panel-head"><div><h2>All recorded shifts</h2><p class="subtle" id="historySummary">5 shifts · 35 hours</p></div><div class="filter-row"><select id="historyFilter" aria-label="Filter by platform"><option value="all">All platforms</option><option>Zomato</option><option>Swiggy</option><option>Zepto</option><option>Uber / Rapido</option><option>Other</option></select></div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Platform</th><th>Gross</th><th>Costs</th><th>Net / hour</th><th>Signal</th></tr></thead><tbody id="historyRows"></tbody></table></div></section>
+        </section>
+
+        <section class="view" id="receiptView" aria-labelledby="receiptTitle">
+          <div class="page-head receipt-actions"><div><p class="eyebrow">Portable proof of your shift</p><h1 id="receiptTitle">Net Pay Receipt</h1><p class="subtle">A clear, shareable record of what the shift actually paid.</p></div><button class="primary-btn" id="printReceipt">Print / save PDF</button></div>
+          <div class="receipt-layout"><article class="receipt-preview" aria-label="Net pay receipt preview"><div class="receipt-top"><div class="receipt-brand">Asli Kamai</div><small>WORKER-OWNED<br />NET PAY RECEIPT</small></div><div class="receipt-date" id="receiptDate">Saturday, 24 October 2026</div><h2 id="receiptShiftTitle">Zomato · Evening shift</h2><div class="receipt-big"><span>TRUE HOURLY PAY</span><strong id="receiptHourly">₹97.65</strong></div><div class="receipt-lines"><div class="receipt-line"><span>Gross earnings</span><strong id="receiptGross">₹1,150</strong></div><div class="receipt-line"><span>Fuel / charging</span><strong id="receiptFuel">− ₹240</strong></div><div class="receipt-line"><span>Maintenance reserve</span><strong id="receiptMaintenance">− ₹60</strong></div><div class="receipt-line"><span>Phone & data</span><strong id="receiptPhone">− ₹20</strong></div><div class="receipt-line"><span>Other costs</span><strong id="receiptOther">− ₹0</strong></div><div class="receipt-line" style="padding-top: 11px; border-top: 1px solid #edf1ee;"><span><strong>Net earnings</strong></span><strong id="receiptNet" class="positive">₹830</strong></div></div><div class="receipt-foot"><span id="receiptMeta">8.5 hours · 22 orders · 90 km</span><span>Demo record · user controlled</span></div></article><div class="insight-stack"><div class="insight-card"><div class="icon-box">↗</div><h3>Why this matters</h3><p>A payout is not income until operating costs are removed. This receipt makes the calculation visible and portable.</p></div><div class="insight-card"><div class="icon-box" style="background: var(--mint); color: var(--teal-dark);">✓</div><h3>Good shift signal</h3><p id="receiptInsight">This shift kept 72.2% of its gross payout after costs.</p></div><div class="insight-card"><h3>Cost mix</h3><div class="bar-list"><div><div class="bar-label"><span>Fuel / charging</span><span id="fuelPercent">75%</span></div><div class="bar-track"><span id="fuelBar" style="width: 75%"></span></div></div><div><div class="bar-label"><span>Maintenance</span><span id="maintenancePercent">19%</span></div><div class="bar-track"><span id="maintenanceBar" style="width: 19%; background: var(--amber)"></span></div></div><div><div class="bar-label"><span>Phone + other</span><span id="otherPercent">6%</span></div><div class="bar-track"><span id="otherBar" style="width: 6%; background: #78a5a0"></span></div></div></div></div></div></div>
+        </section>
+      </main>
+    </div>
+
+    <nav class="mobile-nav" aria-label="Mobile navigation"><button class="active" data-view="dashboard"><span class="nav-icon">◉</span>Overview</button><button data-view="log"><span class="nav-icon">＋</span>Log shift</button><button data-view="history"><span class="nav-icon">≡</span>History</button><button data-view="receipt"><span class="nav-icon">▤</span>Receipt</button></nav>
+    <div id="toastRegion" aria-live="polite"></div>
+
+    <script>
+      const seedShifts = [
+        { date: '2026-10-24', platform: 'Zomato', hours: 8.5, orders: 22, kilometres: 90, payout: 1150, tips: 0, fuel: 240, maintenance: 60, phone: 20, otherCost: 0 },
+        { date: '2026-10-23', platform: 'Zomato', hours: 7.2, orders: 20, kilometres: 74, payout: 1020, tips: 80, fuel: 198, maintenance: 50, phone: 20, otherCost: 0 },
+        { date: '2026-10-22', platform: 'Swiggy', hours: 6.5, orders: 17, kilometres: 61, payout: 910, tips: 40, fuel: 164, maintenance: 42, phone: 20, otherCost: 0 },
+        { date: '2026-10-21', platform: 'Zomato', hours: 6.8, orders: 18, kilometres: 68, payout: 960, tips: 0, fuel: 182, maintenance: 45, phone: 20, otherCost: 0 },
+        { date: '2026-10-20', platform: 'Swiggy', hours: 6.0, orders: 15, kilometres: 56, payout: 840, tips: 30, fuel: 151, maintenance: 39, phone: 20, otherCost: 0 }
+      ];
+      const storageKey = 'kamaiclear-shifts-v1';
+      let shifts = seedShifts;
+      try { shifts = JSON.parse(localStorage.getItem(storageKey) || 'null') || seedShifts; } catch (error) { shifts = seedShifts; }
+      let latestShift = shifts[0];
+
+      const money = (value) => `₹${Math.round(Number(value) || 0).toLocaleString('en-IN')}`;
+      const money2 = (value) => `₹${(Number(value) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const totalCost = (shift) => Number(shift.fuel || 0) + Number(shift.maintenance || 0) + Number(shift.phone || 0) + Number(shift.otherCost || 0);
+      const gross = (shift) => Number(shift.payout || 0) + Number(shift.tips || 0);
+      const net = (shift) => gross(shift) - totalCost(shift);
+      const hourly = (shift) => Number(shift.hours || 0) ? net(shift) / Number(shift.hours) : 0;
+      const dateText = (value, long = false) => new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${value}T12:00:00`));
+      const shortDate = (value) => new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(new Date(`${value}T12:00:00`));
+
+      function save() { try { localStorage.setItem(storageKey, JSON.stringify(shifts)); } catch (error) { /* File previews may block storage; the session still works. */ } }
+      function showToast(message) {
+        const region = document.getElementById('toastRegion');
+        region.innerHTML = `<div class="toast">${message}</div>`;
+        setTimeout(() => { region.innerHTML = ''; }, 3200);
+      }
+      function go(view) {
+        document.querySelectorAll('.view').forEach((el) => el.classList.toggle('active', el.id === `${view}View`));
+        document.querySelectorAll('[data-view]').forEach((el) => el.classList.toggle('active', el.dataset.view === view));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (view === 'receipt') renderReceipt(latestShift);
+      }
+      document.addEventListener('click', (event) => {
+        const target = event.target.closest('[data-view]');
+        if (target) go(target.dataset.view);
+      });
+
+      function currentFormShift() {
+        const form = document.getElementById('shiftForm');
+        const data = Object.fromEntries(new FormData(form).entries());
+        return Object.fromEntries(Object.entries(data).map(([key, value]) => [key, ['platform', 'date'].includes(key) ? value : Number(value) || 0]));
+      }
+      function updateCalculator() {
+        const shift = currentFormShift();
+        document.getElementById('calcGross').textContent = money(gross(shift));
+        document.getElementById('calcCosts').textContent = `− ${money(totalCost(shift))}`;
+        document.getElementById('calcNet').textContent = money(net(shift));
+        document.getElementById('calcHourly').textContent = `${money2(hourly(shift))} / hr`;
+      }
+      document.querySelectorAll('#shiftForm input, #shiftForm select').forEach((field) => {
+        field.addEventListener('input', updateCalculator);
+        field.addEventListener('change', updateCalculator);
+      });
+      document.getElementById('shiftForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const shift = currentFormShift();
+        if (!shift.date || !shift.hours || gross(shift) <= 0) { showToast('Add a date, hours and earnings before saving.'); return; }
+        shifts = [shift, ...shifts].slice(0, 30);
+        latestShift = shift;
+        save(); renderAll(); renderReceipt(shift); go('receipt');
+        showToast('Shift saved. Your Net Pay Receipt is ready.');
+      });
+      document.getElementById('historyFilter').addEventListener('change', renderHistory);
+      document.getElementById('printReceipt').addEventListener('click', () => window.print());
+
+      function renderRecent() {
+        const target = document.getElementById('recentShifts');
+        target.innerHTML = shifts.slice(0, 3).map((shift) => `<div class="shift-row"><div><div class="shift-title"><span class="mini-avatar">${shift.platform.slice(0, 1)}</span>${shift.platform}</div><div class="shift-date">${shortDate(shift.date)} · ${shift.hours}h · ${shift.orders} orders</div></div><div class="shift-amount"><strong>${money2(hourly(shift))}/h</strong><span>${money(net(shift))} net</span></div></div>`).join('') || '<div class="empty-state">No shifts yet. Record your first shift to see your true hourly pay.</div>';
+      }
+      function renderHistory() {
+        const filter = document.getElementById('historyFilter').value;
+        const rows = shifts.filter((shift) => filter === 'all' || shift.platform === filter);
+        document.getElementById('historySummary').textContent = `${rows.length} shift${rows.length === 1 ? '' : 's'} · ${rows.reduce((sum, shift) => sum + Number(shift.hours || 0), 0).toFixed(1)} hours`;
+        document.getElementById('historyRows').innerHTML = rows.map((shift) => { const rate = hourly(shift); const badge = rate >= 105 ? ['good', 'Strong'] : rate >= 90 ? ['warn', 'Watch costs'] : ['low', 'Low margin']; return `<tr><td><strong>${shortDate(shift.date)}</strong></td><td>${shift.platform}</td><td>${money(gross(shift))}</td><td>${money(totalCost(shift))}</td><td class="${rate >= 90 ? 'positive' : 'negative'}">${money2(rate)}</td><td><span class="badge ${badge[0]}">${badge[1]}</span></td></tr>`; }).join('') || '<tr><td colspan="6"><div class="empty-state">No shifts match this filter.</div></td></tr>';
+      }
+      function renderChart() {
+        const values = shifts.slice(0, 7).reverse().map(hourly);
+        const min = Math.min(...values, 60), max = Math.max(...values, 130), range = Math.max(max - min, 1);
+        const points = values.map((value, index) => { const x = 20 + (555 / Math.max(values.length - 1, 1)) * index; const y = 155 - ((value - min) / range) * 115; return `${x},${y}`; }).join(' ');
+        document.getElementById('payLine').setAttribute('points', points);
+        document.getElementById('payDots').innerHTML = values.map((value, index) => { const x = 20 + (555 / Math.max(values.length - 1, 1)) * index; const y = 155 - ((value - min) / range) * 115; return `<circle cx="${x}" cy="${y}" r="5"></circle>`; }).join('');
+      }
+      function renderDashboard() {
+        const totalNet = shifts.reduce((sum, shift) => sum + net(shift), 0);
+        const totalHours = shifts.reduce((sum, shift) => sum + Number(shift.hours || 0), 0);
+        const totalGross = shifts.reduce((sum, shift) => sum + gross(shift), 0);
+        const costs = shifts.reduce((sum, shift) => sum + totalCost(shift), 0);
+        const best = [...shifts].sort((a, b) => hourly(b) - hourly(a))[0];
+        document.getElementById('heroHourly').textContent = money2(totalHours ? totalNet / totalHours : 0);
+        document.getElementById('statNet').textContent = money(totalNet);
+        document.getElementById('statNetHint').textContent = `after ${money(costs)} in costs`;
+        document.getElementById('statHours').textContent = `${totalHours.toFixed(1)} h`;
+        document.getElementById('statHoursHint').textContent = `across ${shifts.length} shift${shifts.length === 1 ? '' : 's'}`;
+        document.getElementById('statCost').textContent = `${totalGross ? ((costs / totalGross) * 100).toFixed(1) : '0.0'}%`;
+        document.getElementById('statBest').textContent = `${money(Math.round(hourly(best || { hours: 1 })))}/h`;
+        document.getElementById('statBestHint').textContent = best ? `${best.platform} · ${shortDate(best.date)}` : 'Record a shift';
+      }
+      function renderReceipt(shift) {
+        if (!shift) return;
+        const costs = totalCost(shift), grossValue = gross(shift), netValue = net(shift);
+        document.getElementById('receiptDate').textContent = dateText(shift.date);
+        document.getElementById('receiptShiftTitle').textContent = `${shift.platform} · shift record`;
+        document.getElementById('receiptHourly').textContent = money2(hourly(shift));
+        document.getElementById('receiptGross').textContent = money(grossValue);
+        document.getElementById('receiptFuel').textContent = `− ${money(shift.fuel)}`;
+        document.getElementById('receiptMaintenance').textContent = `− ${money(shift.maintenance)}`;
+        document.getElementById('receiptPhone').textContent = `− ${money(shift.phone)}`;
+        document.getElementById('receiptOther').textContent = `− ${money(shift.otherCost)}`;
+        document.getElementById('receiptNet').textContent = money(netValue);
+        document.getElementById('receiptMeta').textContent = `${shift.hours} hours · ${shift.orders} orders · ${shift.kilometres} km`;
+        document.getElementById('receiptInsight').textContent = `This shift kept ${grossValue ? ((netValue / grossValue) * 100).toFixed(1) : 0}% of its gross payout after costs.`;
+        const fuelPercent = costs ? Math.round((shift.fuel / costs) * 100) : 0;
+        const maintPercent = costs ? Math.round((shift.maintenance / costs) * 100) : 0;
+        const otherPercent = Math.max(0, 100 - fuelPercent - maintPercent);
+        document.getElementById('fuelPercent').textContent = `${fuelPercent}%`; document.getElementById('fuelBar').style.width = `${fuelPercent}%`;
+        document.getElementById('maintenancePercent').textContent = `${maintPercent}%`; document.getElementById('maintenanceBar').style.width = `${maintPercent}%`;
+        document.getElementById('otherPercent').textContent = `${otherPercent}%`; document.getElementById('otherBar').style.width = `${otherPercent}%`;
+      }
+      function renderAll() { renderDashboard(); renderRecent(); renderHistory(); renderChart(); updateCalculator(); }
+      renderAll(); renderReceipt(latestShift);
+    </script>
+  </body>
+</html>
